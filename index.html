@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>零工打卡薪资计算器</title>
 
     <!-- PWA 相关 -->
@@ -25,7 +25,9 @@
             line-height: 1.6;
             padding: 12px;
             font-size: 20px; /* 整体字体偏大 */
-        }
+    -webkit-text-size-adjust: 100%;
+    padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+}
 
         .container {
             max-width: 560px;
@@ -345,7 +347,24 @@
                 grid-template-columns: 1fr;
             }
         }
-    </style>
+
+/* iPhone 13 窄屏适配补丁 */
+@media (max-width: 420px) {
+    body { font-size: 18px; }
+    h1 { font-size: 26px; letter-spacing: 1px; }
+    .wage-input label { font-size: 20px; }
+    .wage-input input { width: 120px; font-size: 20px; }
+    .manual-input-title { font-size: 22px; }
+}
+
+/* 允许标题/记录行换行，避免内容被挤出屏幕 */
+.section-title { flex-wrap: wrap; gap: 6px; }
+.section-title span:last-child { white-space: normal; text-align: right; }
+
+.record-item { flex-wrap: wrap; }
+.record-duration { white-space: normal; }
+
+</style>
 </head>
 <body>
 <div class="container">
