@@ -2,963 +2,408 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>零工打卡薪资计算器</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>打工记账本</title>
 
-    <!-- PWA 相关 -->
     <meta name="theme-color" content="#2563eb">
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="apple-touch-icon" href="icons/icon-192.png">
 
     <style>
+        :root {
+            --primary-color: #007aff; /* iOS 蓝色 */
+            --success-color: #34c759; /* iOS 绿色 */
+            --warning-color: #ff9500; /* iOS 橙色 */
+            --danger-color: #ff3b30;  /* iOS 红色 */
+            --bg-color: #f2f2f7;      /* iOS 系统背景色 */
+        }
+
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
-            "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+            -webkit-tap-highlight-color: transparent;
         }
 
         body {
-            background: radial-gradient(circle at top, #e0f2fe, #eef2f7);
-            color: #111;
-            line-height: 1.6;
-            padding: 12px;
-            font-size: 20px; /* 整体字体偏大 */
+            background-color: var(--bg-color);
+            color: #000;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            padding: 16px;
+            font-size: 18px; /* 基础字号加大 */
         }
 
         .container {
-            max-width: 560px;
+            max-width: 500px;
             margin: 0 auto;
-            background-color: #ffffff;
-            border-radius: 24px;
-            box-shadow: 0 10px 30px rgba(15, 23, 42, 0.16);
-            padding: 22px 18px 26px;
-            border: 1px solid #e5e7eb;
         }
 
         h1 {
-            text-align: center;
-            margin-bottom: 6px;
-            color: #0f172a;
-            font-size: 30px;
-            letter-spacing: 2px;
+            font-size: 28px;
+            font-weight: 800;
+            margin-bottom: 4px;
+            text-align: left;
+            padding-left: 10px;
         }
 
         .sub-title {
-            text-align: center;
-            font-size: 18px;
-            color: #6b7280;
-            margin-bottom: 14px;
+            font-size: 16px;
+            color: #8e8e93;
+            margin-bottom: 20px;
+            padding-left: 10px;
         }
 
-        .settings {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            margin-bottom: 12px;
-            background-color: #f9fafb;
-            padding: 14px 14px 12px;
-            border-radius: 18px;
-            border: 1px solid #e5e7eb;
-        }
-
-        .wage-input {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 10px;
-        }
-
-        .wage-input label {
-            font-weight: 700;
-            font-size: 22px;
-            white-space: nowrap;
-        }
-
-        .wage-input input {
-            padding: 8px 10px;
-            border: 1px solid #d1d5db;
-            border-radius: 999px;
-            width: 140px;
-            font-size: 22px;
-            text-align: center;
+        /* 卡片通用样式 */
+        .card {
             background: #ffffff;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
 
-        .current-time-label {
-            font-size: 18px;
-            color: #6b7280;
-        }
-
-        .current-time {
-            font-size: 22px;
-            font-weight: 700;
-            color: #2563eb;
-            margin-top: 4px;
-            word-break: break-all;
-        }
-
-        /* 黄色区域：手动输入上下班时间 */
-        .manual-input {
-            margin: 14px 0;
-            padding: 16px 14px 14px;
-            background: #fff7ed;
-            border-radius: 18px;
-            border: 1px solid #fed7aa;
-        }
-
-        .manual-input-title {
-            font-weight: 700;
-            margin-bottom: 10px;
-            font-size: 26px;
-            color: #111827;
+        /* 设置区域 */
+        .settings-row {
             display: flex;
+            justify-content: space-between;
             align-items: center;
-            gap: 6px;
+            margin-bottom: 15px;
         }
 
-        .manual-input-title::before {
-            content: "🕒";
-            font-size: 26px;
+        label { font-weight: 600; font-size: 20px; }
+
+        input[type="number"], input[type="time"] {
+            font-size: 20px;
+            padding: 10px;
+            border: 1px solid #d1d1d6;
+            border-radius: 10px;
+            background: #f9f9f9;
+            width: 120px;
+            text-align: center;
         }
 
-        .manual-label {
+        input[type="time"] { width: 100%; margin-top: 8px; margin-bottom: 15px; height: 50px; }
+
+        /* 按钮样式 */
+        .btn {
             display: block;
-            margin-top: 6px;
-            margin-bottom: 4px;
-            font-size: 22px;
-            font-weight: 700;
-            color: #111827;
-        }
-
-        .manual-input input[type="time"] {
             width: 100%;
-            padding: 10px 12px;
-            border-radius: 12px;
-            border: 1px solid #d1d5db;
-            font-size: 24px;
-            background-color: #ffffff;
-        }
-
-        .manual-input button {
-            margin-top: 14px;
-            width: 100%;
-            padding: 14px;
-            font-size: 24px;
-            font-weight: 700;
-            border-radius: 999px;
+            padding: 16px;
             border: none;
-            background: linear-gradient(90deg, #2563eb, #4f46e5);
-            color: #ffffff;
+            border-radius: 14px;
+            font-size: 20px;
+            font-weight: 700;
             cursor: pointer;
+            transition: opacity 0.2s;
+            text-align: center;
         }
 
-        .manual-input button:active {
-            transform: scale(0.97);
-        }
+        .btn:active { opacity: 0.7; transform: scale(0.99); }
+        .btn-primary { background-color: var(--primary-color); color: white; }
+        .btn-success { background-color: var(--success-color); color: white; margin-top: 10px; }
+        .btn-outline { background: none; color: var(--primary-color); border: 1px solid var(--primary-color); margin-top: 10px; font-size: 16px; padding: 8px; }
 
-        /* 红框：只保留“日结”标签（做成一个胶囊） */
-        .view-switch {
-            display: flex;
-            justify-content: center;
-            margin-top: 10px;
-            margin-bottom: 10px;
-        }
-
-        .view-btn {
-            padding: 8px 30px;
-            font-size: 22px;
-            border-radius: 999px;
-            border: none;
-            background-color: #2563eb;
-            color: #ffffff;
-            font-weight: 700;
-            box-shadow: 0 2px 5px rgba(37, 99, 235, 0.4);
-        }
-
-        .stats {
+        /* 今日汇总统计 */
+        .today-stats {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-bottom: 12px;
+            gap: 12px;
         }
+        .stat-box { text-align: center; }
+        .stat-label { font-size: 14px; color: #8e8e93; margin-bottom: 5px; }
+        .stat-num { font-size: 24px; font-weight: 800; color: var(--primary-color); }
+        .stat-num.orange { color: var(--warning-color); }
 
-        .stat-card {
-            background-color: #f9fafb;
-            padding: 12px;
-            border-radius: 16px;
-            text-align: center;
-            border: 1px solid #e5e7eb;
-        }
-
-        .stat-card h3 {
-            margin-bottom: 6px;
-            color: #374151;
-            font-size: 22px;
-        }
-
-        .stat-value {
-            font-size: 26px;
-            font-weight: 700;
-            color: #2563eb;
-        }
-
-        .highlight {
-            color: #f97316;
-        }
-
-        .section-title {
-            margin-bottom: 8px;
-            color: #111827;
-            border-bottom: 2px solid #e5e7eb;
-            padding-bottom: 4px;
-            font-size: 22px;
+        /* 历史记录样式 */
+        .section-header {
             display: flex;
-            align-items: center;
             justify-content: space-between;
+            align-items: center;
+            margin: 20px 0 10px 5px;
         }
 
-        .section-title span:last-child {
-            font-size: 16px;
-            color: #9ca3af;
-        }
+        .section-header h2 { font-size: 22px; font-weight: 700; }
 
-        .today-record {
-            margin-bottom: 12px;
-        }
-
-        .record-list {
-            max-height: 260px;
-            overflow-y: auto;
-            border: 1px solid #e5e7eb;
-            border-radius: 14px;
-            background-color: #ffffff;
+        .month-group { margin-bottom: 20px; }
+        
+        .month-title {
+            background: #e5e5ea;
+            padding: 8px 15px;
+            border-radius: 10px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
         .record-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 10px 12px;
-            border-bottom: 1px solid #f3f4f6;
-            font-size: 20px;
-            gap: 8px;
+            padding: 12px 0;
+            border-bottom: 1px solid #f2f2f7;
         }
+        .record-item:last-child { border-bottom: none; }
 
-        .record-item:last-child {
-            border-bottom: none;
-        }
-
-        .record-time {
-            font-weight: 700;
-            color: #111827;
-        }
-
-        .record-duration {
-            color: #6b7280;
-            text-align: right;
-            white-space: nowrap;
-            margin-right: 6px;
-        }
-
-        .record-delete-btn {
-            flex-shrink: 0;
+        .record-info { flex: 1; }
+        .record-info .date { font-size: 14px; color: #8e8e93; }
+        .record-info .time { font-size: 18px; font-weight: 600; }
+        
+        .record-right { text-align: right; margin-right: 15px; }
+        .record-money { color: var(--warning-color); font-weight: 700; }
+        
+        .del-btn {
+            background: #ffe5e5;
+            color: var(--danger-color);
             border: none;
-            border-radius: 999px;
-            padding: 4px 10px;
-            font-size: 18px;
-            background: #ef4444;
-            color: #fff;
-            cursor: pointer;
-        }
-
-        .record-delete-btn:active {
-            transform: scale(0.96);
-        }
-
-        .record-empty {
-            padding: 14px;
-            text-align: center;
-            color: #9ca3af;
-            font-size: 20px;
-        }
-
-        /* 本月打卡记录日期小标题 */
-        .record-date-header {
             padding: 8px 12px;
-            background: #f3f4ff;
-            color: #4b5563;
-            font-size: 20px;
-            font-weight: 700;
-            border-bottom: 1px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
         }
 
-        .monthly-stats {
-            margin-top: 10px;
-        }
+        .empty-tip { text-align: center; color: #c7c7cc; padding: 20px; }
 
-        .month-summary {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 8px;
-        }
-
-        .month-summary .stat-card {
-            padding: 10px 8px;
-        }
-
-        .export-wrap {
-            margin-top: 12px;
-        }
-
-        /* 新增：导出区布局 */
-        .export-controls {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-            justify-content: flex-end;
-            flex-wrap: wrap;
-        }
-
-        .export-controls select {
-            padding: 10px 12px;
-            border-radius: 999px;
-            border: 1px solid #d1d5db;
-            background: #ffffff;
-            font-size: 18px;
-            min-width: 140px;
-        }
-
-        .export-btn {
-            padding: 10px 16px;
-            border-radius: 999px;
-            border: none;
-            background-color: #10b981;
-            color: #ffffff;
-            font-size: 18px;
-            cursor: pointer;
-            font-weight: 700;
-            white-space: nowrap;
-        }
-
-        .export-btn.secondary {
-            background-color: #0ea5e9;
-        }
-
-        .export-btn:active {
-            transform: scale(0.97);
-        }
-
-        .month-records {
-            margin-top: 12px;
-        }
-
-        @media (max-width: 600px) {
-            .container {
-                padding: 16px 12px 22px;
-            }
-
-            .stats {
-                grid-template-columns: 1fr;
-            }
-
-            .month-summary {
-                grid-template-columns: 1fr;
-            }
-
-            .export-controls {
-                justify-content: stretch;
-            }
-
-            .export-controls select,
-            .export-controls button {
-                width: 100%;
-            }
-        }
+        /* 适配 iPhone 13 底部安全区域 */
+        .footer-spacer { height: 40px; }
     </style>
 </head>
 <body>
+
 <div class="container">
-    <h1>零工打卡薪资计算器</h1>
-    <div class="sub-title">下班后自己填上班 / 下班时间，自动算当天工资和本月工资 💰</div>
+    <h1>打工记账本 💰</h1>
+    <p class="sub-title">简单记一记，工钱不忘记</p>
 
-    <div class="settings">
-        <div class="wage-input">
-            <label for="hourly-wage">时薪（元/小时）</label>
-            <input type="number" id="hourly-wage" min="0" step="0.5" value="14">
-        </div>
-        <div>
-            <div class="current-time-label">当前时间</div>
-            <div class="current-time" id="current-time"></div>
-        </div>
-    </div>
-
-    <!-- 黄色区域：手动输入 -->
-    <div class="manual-input">
-        <div class="manual-input-title">手动输入今天的上班 / 下班时间</div>
-
-        <label class="manual-label" for="manual-start">上班时间</label>
-        <input id="manual-start" type="time">
-
-        <label class="manual-label" for="manual-end" style="margin-top: 8px;">下班时间</label>
-        <input id="manual-end" type="time">
-
-        <button id="save-manual-record">＋ 保存今天这段上班记录</button>
-    </div>
-
-    <!-- 红框：只保留“日结”标签 -->
-    <div class="view-switch">
-        <button class="view-btn" disabled>日结</button>
-    </div>
-
-    <div class="stats">
-        <div class="stat-card">
-            <h3>今日工作时长</h3>
-            <div class="stat-value" id="today-duration">0 分钟</div>
-        </div>
-        <div class="stat-card">
-            <h3>今日收入</h3>
-            <div class="stat-value highlight" id="today-earnings">0 元</div>
-        </div>
-    </div>
-
-    <div class="today-record">
-        <div class="section-title">
-            <span>今日打卡记录</span>
-            <span>一次上班 + 一次下班 为一组</span>
-        </div>
-        <div class="record-list" id="today-records"></div>
-    </div>
-
-    <div class="monthly-stats">
-        <div class="section-title">
-            <span>本月统计</span>
-        </div>
-        <div class="month-summary">
-            <div class="stat-card">
-                <h3>工作天数</h3>
-                <div class="stat-value" id="month-days">0 天</div>
-            </div>
-            <div class="stat-card">
-                <h3>总时长</h3>
-                <div class="stat-value" id="month-duration">0 分钟</div>
-            </div>
-            <div class="stat-card">
-                <h3>总收入</h3>
-                <div class="stat-value highlight" id="month-earnings">0 元</div>
+    <div class="card">
+        <div class="settings-row">
+            <label>我的时薪</label>
+            <div>
+                <input type="number" id="hourly-wage" value="14">
+                <span style="font-weight: 700;"> 元</span>
             </div>
         </div>
+        <p style="font-size: 14px; color: #8e8e93; text-align: right;">(修改后自动重新计算)</p>
+    </div>
 
-        <!-- 新增：按月导出/导出全部 -->
-        <div class="export-wrap">
-            <div class="export-controls">
-                <select id="export-month-select" title="选择要导出的月份"></select>
-                <button class="export-btn" id="export-selected-btn">导出所选月份 Excel</button>
-                <button class="export-btn secondary" id="export-all-btn">导出全部月份 Excel</button>
-            </div>
+    <div class="card" style="border: 2px solid #ffe5d0;">
+        <h2 style="font-size: 20px; margin-bottom: 10px;">➕ 记一笔今天的工作</h2>
+        <label>开始时间</label>
+        <input type="time" id="manual-start">
+        <label>结束时间</label>
+        <input type="time" id="manual-end">
+        <button class="btn btn-primary" id="save-record">保存这段时间</button>
+    </div>
+
+    <div class="card today-stats">
+        <div class="stat-box">
+            <div class="stat-label">今日时长</div>
+            <div class="stat-num" id="today-duration">0 分钟</div>
+        </div>
+        <div class="stat-box" style="border-left: 1px solid #f2f2f7;">
+            <div class="stat-label">今日预计收入</div>
+            <div class="stat-num orange" id="today-earnings">0 元</div>
         </div>
     </div>
 
-    <!-- 本月打卡记录 -->
-    <div class="month-records">
-        <div class="section-title">
-            <span>本月打卡记录</span>
-            <span>按日期从早到晚排列</span>
-        </div>
-        <div class="record-list" id="month-records-list"></div>
-    </div>
+    <button class="btn btn-success" id="export-all">导出全部月份到 Excel</button>
 
-    <!-- 新增：历史每月收益 -->
-    <div class="month-records">
-        <div class="section-title">
-            <span>历史每月收益</span>
-            <span>按月份从新到旧</span>
-        </div>
-        <div class="record-list" id="all-months-list"></div>
+    <div class="section-header">
+        <h2>历史记录</h2>
+        <span style="font-size: 14px; color: #8e8e93;">左滑或点击删除</span>
     </div>
+    <div id="history-container">
+        </div>
+
+    <div class="footer-spacer"></div>
 </div>
 
-<!-- Excel 导出库 -->
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
 <script>
-    // ===== 全局数据 =====
     let workRecords = JSON.parse(localStorage.getItem('workRecords')) || {};
     let hourlyWage = parseFloat(localStorage.getItem('hourlyWage')) || 14;
 
-    const currentTimeEl = document.getElementById('current-time');
-    const hourlyWageInput = document.getElementById('hourly-wage');
+    const wageInput = document.getElementById('hourly-wage');
+    const startInput = document.getElementById('manual-start');
+    const endInput = document.getElementById('manual-end');
+    const saveBtn = document.getElementById('save-record');
+    const historyContainer = document.getElementById('history-container');
 
-    const todayDurationEl = document.getElementById('today-duration');
-    const todayEarningsEl = document.getElementById('today-earnings');
-    const todayRecordsEl = document.getElementById('today-records');
+    // 初始化
+    wageInput.value = hourlyWage;
+    render();
 
-    const monthDaysEl = document.getElementById('month-days');
-    const monthDurationEl = document.getElementById('month-duration');
-    const monthEarningsEl = document.getElementById('month-earnings');
-    const monthRecordsListEl = document.getElementById('month-records-list');
-
-    const allMonthsListEl = document.getElementById('all-months-list');
-
-    const exportMonthSelect = document.getElementById('export-month-select');
-    const exportSelectedBtn = document.getElementById('export-selected-btn');
-    const exportAllBtn = document.getElementById('export-all-btn');
-
-    const manualStartInput = document.getElementById('manual-start');
-    const manualEndInput = document.getElementById('manual-end');
-    const saveManualBtn = document.getElementById('save-manual-record');
-
-    function getTodayKey() {
-        const now = new Date();
-        const y = now.getFullYear();
-        const m = String(now.getMonth() + 1).padStart(2, '0');
-        const d = String(now.getDate()).padStart(2, '0');
-        return `${y}-${m}-${d}`;
-    }
-
-    function getMonthKey() {
-        const now = new Date();
-        const y = now.getFullYear();
-        const m = String(now.getMonth() + 1).padStart(2, '0');
-        return `${y}-${m}`;
-    }
-
-    function saveData() {
-        localStorage.setItem('workRecords', JSON.stringify(workRecords));
-        localStorage.setItem('hourlyWage', String(hourlyWage));
-    }
-
-    // 显示当前时间
-    function updateCurrentTime() {
-        const now = new Date();
-        currentTimeEl.textContent = now.toLocaleString('zh-CN');
-    }
-    updateCurrentTime();
-    setInterval(updateCurrentTime, 1000);
-
-    // 时薪变化
-    hourlyWageInput.value = hourlyWage;
-    hourlyWageInput.addEventListener('change', () => {
-        const v = parseFloat(hourlyWageInput.value);
-        if (isNaN(v) || v < 0) {
-            alert('时薪请输入正确的数字');
-            hourlyWageInput.value = hourlyWage;
-            return;
-        }
-        hourlyWage = v;
-        saveData();
-        updateDisplay();
+    // 修改时薪
+    wageInput.addEventListener('input', () => {
+        hourlyWage = parseFloat(wageInput.value) || 0;
+        localStorage.setItem('hourlyWage', hourlyWage);
+        render();
     });
 
-    // 手动保存一条今天的记录
-    if (saveManualBtn) {
-        saveManualBtn.addEventListener('click', () => {
-            const startStr = manualStartInput.value;
-            const endStr = manualEndInput.value;
+    // 保存记录
+    saveBtn.addEventListener('click', () => {
+        const s = startInput.value;
+        const e = endInput.value;
+        if (!s || !e) return alert("请选好开始和结束时间");
 
-            if (!startStr || !endStr) {
-                alert('请先选择上班时间和下班时间');
-                return;
-            }
+        const now = new Date();
+        const dateKey = now.toISOString().split('T')[0]; // YYYY-MM-DD
+        
+        // 转换为时间戳
+        const baseDate = `2000-01-01 `; // 仅用于比较时长
+        const startTs = new Date(baseDate + s).getTime();
+        const endTs = new Date(baseDate + e).getTime();
 
-            const [sh, sm] = startStr.split(':').map(Number);
-            const [eh, em] = endStr.split(':').map(Number);
+        if (endTs <= startTs) return alert("结束时间必须比开始时间晚哦！");
 
-            const today = new Date();
-            const startDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), sh, sm, 0, 0);
-            const endDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), eh, em, 0, 0);
+        if (!workRecords[dateKey]) workRecords[dateKey] = [];
+        workRecords[dateKey].push({ start: s, end: e });
 
-            if (endDate <= startDate) {
-                alert('下班时间必须晚于上班时间');
-                return;
-            }
+        localStorage.setItem('workRecords', JSON.stringify(workRecords));
+        render();
+        
+        // 清空输入
+        startInput.value = '';
+        endInput.value = '';
+        alert("保存成功！");
+    });
 
-            const todayKey = getTodayKey();
-            if (!workRecords[todayKey]) {
-                workRecords[todayKey] = [];
-            }
-
-            workRecords[todayKey].push({
-                start: startDate.getTime(),
-                end: endDate.getTime()
-            });
-
-            saveData();
-            updateDisplay();
-
-            const minutes = Math.round((endDate - startDate) / (1000 * 60));
-            alert(`已保存：${startStr} - ${endStr}\n本次约 ${minutes} 分钟`);
-
-            manualStartInput.value = '';
-            manualEndInput.value = '';
-        });
-    }
-
-    // 删除某一天的某条记录
-    function deleteRecord(dateKey, index) {
-        const list = workRecords[dateKey];
-        if (!list || index < 0 || index >= list.length) return;
-
-        if (!confirm('确定要删除这条记录吗？')) return;
-
-        list.splice(index, 1);
-        if (list.length === 0) {
-            delete workRecords[dateKey];
+    function deleteRecord(date, index) {
+        if (confirm("确定要删除这条记录吗？")) {
+            workRecords[date].splice(index, 1);
+            if (workRecords[date].length === 0) delete workRecords[date];
+            localStorage.setItem('workRecords', JSON.stringify(workRecords));
+            render();
         }
-        saveData();
-        updateDisplay();
     }
 
-    // 今日汇总
-    function updateSummaryView() {
-        const todayKey = getTodayKey();
-        const todayRecords = workRecords[todayKey] || [];
-        let totalMinutes = 0;
+    function render() {
+        renderToday();
+        renderHistory();
+    }
 
-        todayRecords.forEach(record => {
-            if (record.end) {
-                totalMinutes += Math.round((record.end - record.start) / (1000 * 60));
-            }
+    function renderToday() {
+        const today = new Date().toISOString().split('T')[0];
+        const records = workRecords[today] || [];
+        let mins = 0;
+        records.forEach(r => mins += calcMins(r.start, r.end));
+        
+        document.getElementById('today-duration').textContent = mins + " 分钟";
+        document.getElementById('today-earnings').textContent = (mins / 60 * hourlyWage).toFixed(2) + " 元";
+    }
+
+    function renderHistory() {
+        historyContainer.innerHTML = '';
+        const sortedDates = Object.keys(workRecords).sort().reverse();
+        
+        // 按月分组
+        const months = {};
+        sortedDates.forEach(date => {
+            const month = date.substring(0, 7); // YYYY-MM
+            if (!months[month]) months[month] = [];
+            months[month].push(date);
         });
 
-        const totalEarnings = ((totalMinutes / 60) * hourlyWage).toFixed(2);
-
-        todayDurationEl.textContent = `${totalMinutes} 分钟`;
-        todayEarningsEl.textContent = `${totalEarnings} 元`;
-    }
-
-    // 今日记录列表
-    function updateRecordList() {
-        todayRecordsEl.innerHTML = '';
-
-        function showEmpty(msg) {
-            const emptyDiv = document.createElement('div');
-            emptyDiv.className = 'record-empty';
-            emptyDiv.textContent = msg;
-            todayRecordsEl.appendChild(emptyDiv);
-        }
-
-        const todayKey = getTodayKey();
-        const todayRecords = workRecords[todayKey] || [];
-
-        if (todayRecords.length === 0) {
-            showEmpty('今日暂无打卡记录');
+        if (Object.keys(months).length === 0) {
+            historyContainer.innerHTML = '<div class="empty-tip">还没有记录呢，快去记一笔吧！</div>';
             return;
         }
 
-        todayRecords.forEach((record, index) => {
-            const recordItem = document.createElement('div');
-            recordItem.className = 'record-item';
-
-            const startTime = new Date(record.start);
-            const startTimeStr = startTime.toLocaleTimeString('zh-CN', {
-                hour: '2-digit',
-                minute: '2-digit'
+        for (const month in months) {
+            let monthMins = 0;
+            const monthDiv = document.createElement('div');
+            monthDiv.className = 'month-group';
+            
+            let html = `<div class="month-title">
+                            <span>📅 ${month.replace('-', '年')}月</span>
+                            <button class="btn btn-outline" style="width:auto; margin:0" onclick="exportMonth('${month}')">导出本月</button>
+                        </div><div class="card">`;
+            
+            months[month].forEach(date => {
+                workRecords[date].forEach((r, idx) => {
+                    const m = calcMins(r.start, r.end);
+                    monthMins += m;
+                    const money = (m / 60 * hourlyWage).toFixed(2);
+                    html += `
+                        <div class="record-item">
+                            <div class="record-info">
+                                <div class="date">${date}</div>
+                                <div class="time">${r.start} ~ ${r.end}</div>
+                            </div>
+                            <div class="record-right">
+                                <div class="record-money">+${money}元</div>
+                                <div style="font-size:12px; color:#8e8e93">${m}分钟</div>
+                            </div>
+                            <button class="del-btn" onclick="deleteRecord('${date}', ${idx})">删除</button>
+                        </div>`;
+                });
             });
 
-            let mainHtml = '';
-            if (record.end) {
-                const endTime = new Date(record.end);
-                const endTimeStr = endTime.toLocaleTimeString('zh-CN', {
-                    hour: '2-digit',
-                    minute: '2-digit'
-                });
-
-                const duration = Math.round((record.end - record.start) / (1000 * 60));
-                const earnings = ((duration / 60) * hourlyWage).toFixed(2);
-
-                mainHtml = `
-                    <div class="record-time">${startTimeStr} - ${endTimeStr}</div>
-                    <div class="record-duration">${duration} 分钟（约 ${earnings} 元）</div>
-                `;
-            } else {
-                mainHtml = `
-                    <div class="record-time">${startTimeStr} - 进行中…</div>
-                    <div class="record-duration">等待下班时间</div>
-                `;
-            }
-
-            recordItem.innerHTML = mainHtml;
-
-            const delBtn = document.createElement('button');
-            delBtn.textContent = '删除';
-            delBtn.className = 'record-delete-btn';
-            delBtn.addEventListener('click', () => deleteRecord(todayKey, index));
-
-            recordItem.appendChild(delBtn);
-            todayRecordsEl.appendChild(recordItem);
-        });
-    }
-
-    // 本月统计
-    function updateMonthStats() {
-        const monthKey = getMonthKey();
-        let monthWorkDays = 0;
-        let monthTotalMinutes = 0;
-
-        Object.keys(workRecords).forEach(dateKey => {
-            if (dateKey.startsWith(monthKey)) {
-                const dayRecords = workRecords[dateKey];
-                let dayTotalMinutes = 0;
-
-                dayRecords.forEach(record => {
-                    if (record.end) {
-                        dayTotalMinutes += Math.round((record.end - record.start) / (1000 * 60));
-                    }
-                });
-
-                if (dayTotalMinutes > 0) {
-                    monthWorkDays++;
-                    monthTotalMinutes += dayTotalMinutes;
-                }
-            }
-        });
-
-        const monthEarnings = ((monthTotalMinutes / 60) * hourlyWage).toFixed(2);
-
-        monthDaysEl.textContent = `${monthWorkDays} 天`;
-        monthDurationEl.textContent = `${monthTotalMinutes} 分钟`;
-        monthEarningsEl.textContent = `${monthEarnings} 元`;
-    }
-
-    // 本月打卡记录列表
-    function updateMonthRecordList() {
-        monthRecordsListEl.innerHTML = '';
-
-        function showEmpty(msg) {
-            const emptyDiv = document.createElement('div');
-            emptyDiv.className = 'record-empty';
-            emptyDiv.textContent = msg;
-            monthRecordsListEl.appendChild(emptyDiv);
+            html += `<div style="margin-top:15px; text-align:right; font-weight:800; border-top:1px dashed #eee; padding-top:10px;">
+                        本月合计：<span class="orange" style="color:var(--warning-color)">${(monthMins/60*hourlyWage).toFixed(2)} 元</span>
+                     </div>`;
+            html += `</div>`;
+            monthDiv.innerHTML = html;
+            historyContainer.appendChild(monthDiv);
         }
+    }
 
-        const monthKey = getMonthKey();
-        const allKeys = Object.keys(workRecords).sort();
-        let hasRecord = false;
+    function calcMins(s, e) {
+        const start = new Date(`2000-01-01 ${s}`).getTime();
+        const end = new Date(`2000-01-01 ${e}`).getTime();
+        return Math.round((end - start) / 60000);
+    }
 
-        allKeys.forEach(dateKey => {
-            if (!dateKey.startsWith(monthKey)) return;
-
-            const dayRecords = workRecords[dateKey];
-            if (!dayRecords || dayRecords.length === 0) return;
-
-            hasRecord = true;
-
-            // 日期标题
-            const header = document.createElement('div');
-            header.className = 'record-date-header';
-            header.textContent = `📅 ${dateKey}`;
-            monthRecordsListEl.appendChild(header);
-
-            // 这一天的每条记录
-            dayRecords.forEach((record, index) => {
-                const recordItem = document.createElement('div');
-                recordItem.className = 'record-item';
-
-                const startTime = new Date(record.start);
-                const startTimeStr = startTime.toLocaleTimeString('zh-CN', {
-                    hour: '2-digit',
-                    minute: '2-digit'
-                });
-
-                let mainHtml = '';
-                if (record.end) {
-                    const endTime = new Date(record.end);
-                    const endTimeStr = endTime.toLocaleTimeString('zh-CN', {
-                        hour: '2-digit',
-                        minute: '2-digit'
+    // 导出逻辑
+    window.exportMonth = function(monthKey) {
+        const data = [];
+        Object.keys(workRecords).sort().forEach(date => {
+            if (date.startsWith(monthKey)) {
+                workRecords[date].forEach(r => {
+                    const m = calcMins(r.start, r.end);
+                    data.push({
+                        "日期": date,
+                        "上班时间": r.start,
+                        "下班时间": r.end,
+                        "时长(分钟)": m,
+                        "收益(元)": (m / 60 * hourlyWage).toFixed(2)
                     });
-
-                    const duration = Math.round((record.end - record.start) / (1000 * 60));
-                    const earnings = ((duration / 60) * hourlyWage).toFixed(2);
-
-                    mainHtml = `
-                        <div class="record-time">${startTimeStr} - ${endTimeStr}</div>
-                        <div class="record-duration">${duration} 分钟（约 ${earnings} 元）</div>
-                    `;
-                } else {
-                    mainHtml = `
-                        <div class="record-time">${startTimeStr} - 进行中…</div>
-                        <div class="record-duration">等待下班时间</div>
-                    `;
-                }
-
-                recordItem.innerHTML = mainHtml;
-
-                const delBtn = document.createElement('button');
-                delBtn.textContent = '删除';
-                delBtn.className = 'record-delete-btn';
-                delBtn.addEventListener('click', () => deleteRecord(dateKey, index));
-
-                recordItem.appendChild(delBtn);
-                monthRecordsListEl.appendChild(recordItem);
-            });
-        });
-
-        if (!hasRecord) {
-            showEmpty('本月暂无打卡记录');
-        }
-    }
-
-    // ====== 新增：按月汇总计算 & 渲染 ======
-    // 计算所有月份汇总：{ "YYYY-MM": {minutes, earnings, days} }
-    function calcAllMonthsStats() {
-        const map = {}; // monthKey -> { minutes, daysSet(Set) }
-
-        Object.keys(workRecords).forEach(dateKey => {
-            const monthKey = dateKey.slice(0, 7); // "YYYY-MM"
-            const dayRecords = workRecords[dateKey] || [];
-
-            let dayMinutes = 0;
-            dayRecords.forEach(r => {
-                if (r.end) dayMinutes += Math.round((r.end - r.start) / (1000 * 60));
-            });
-
-            if (!map[monthKey]) {
-                map[monthKey] = { minutes: 0, daysSet: new Set() };
-            }
-            if (dayMinutes > 0) map[monthKey].daysSet.add(dateKey);
-
-            map[monthKey].minutes += dayMinutes;
-        });
-
-        const result = {};
-        Object.keys(map).forEach(mk => {
-            const minutes = map[mk].minutes;
-            result[mk] = {
-                minutes,
-                days: map[mk].daysSet.size,
-                earnings: (minutes / 60) * hourlyWage
-            };
-        });
-
-        return result;
-    }
-
-    function updateAllMonthsEarningsList() {
-        if (!allMonthsListEl) return;
-
-        allMonthsListEl.innerHTML = '';
-
-        function showEmpty(msg) {
-            const emptyDiv = document.createElement('div');
-            emptyDiv.className = 'record-empty';
-            emptyDiv.textContent = msg;
-            allMonthsListEl.appendChild(emptyDiv);
-        }
-
-        const stats = calcAllMonthsStats();
-        const months = Object.keys(stats).sort().reverse(); // 新到旧
-
-        if (months.length === 0) {
-            showEmpty('暂无历史记录');
-            return;
-        }
-
-        months.forEach(monthKey => {
-            const s = stats[monthKey];
-
-            const header = document.createElement('div');
-            header.className = 'record-date-header';
-            header.textContent = `🗓️ ${monthKey}`;
-            allMonthsListEl.appendChild(header);
-
-            const item = document.createElement('div');
-            item.className = 'record-item';
-
-            const minutes = s.minutes;
-            const earnings = s.earnings.toFixed(2);
-
-            item.innerHTML = `
-                <div class="record-time">工作天数：${s.days} 天</div>
-                <div class="record-duration">${minutes} 分钟（约 ${earnings} 元）</div>
-            `;
-
-            allMonthsListEl.appendChild(item);
-        });
-    }
-
-    // ====== 新增：月份下拉框 ======
-    function getAllMonthKeys() {
-        const set = new Set();
-        Object.keys(workRecords).forEach(dateKey => {
-            if (typeof dateKey === 'string' && dateKey.length >= 7) {
-                set.add(dateKey.slice(0, 7));
+                });
             }
         });
-        // 保证当前月也在下拉框里（即使没记录也能选）
-        set.add(getMonthKey());
-        return Array.from(set).sort().reverse();
-    }
+        downloadExcel(data, `${monthKey}账单`);
+    };
 
-    function updateMonthSelectOptions() {
-        if (!exportMonthSelect) return;
-
-        const current = exportMonthSelect.value || getMonthKey();
-        const months = getAllMonthKeys();
-
-        exportMonthSelect.innerHTML = '';
-        months.forEach(mk => {
-            const opt = document.createElement('option');
-            opt.value = mk;
-            opt.textContent = mk;
-            exportMonthSelect.appendChild(opt);
-        });
-
-        // 尽量保留原选择
-        const keep = months.includes(current) ? current : getMonthKey();
-        exportMonthSelect.value = keep;
-    }
-
-    // ====== 导出 Excel（按月选择 / 全部月份） ======
-    function buildMonthDetailRows(monthKey) {
-        const rows = [['日期', '上班时间', '下班时间', '时长(分钟)', '收入(元)']];
-
-        let totalMinutes = 0;
-        let totalEarnings = 0;
-
-        const allKeys = Object.keys(workRecords).sort();
-
-        allKeys.forEach(dateKey => {
-            if (!dateKey.startsWith(monthKey)) return;
-            const records = workRecords[dateKey] || [];
-
-            records.forEach(record => {
-                if (!record.end) return;
-
-                const start = new Date(record.start);
-                const end = new Date(record.end);
-                const duration = Math.round((record.end - record.start) / (1000 * 60));
-                const earnings = (duration / 60) * hourlyWage;
-
-                totalMinutes += duration;
-                totalEarnings += earnings;
-
-                rows.push([
-                    dateKey,
-                    start.toLocaleTimeString('zh-CN', {hour: '2-digit', minute: '2-digit'}),
-                    end.toLocaleTimeString('zh-CN', {hour: '2-digit', minute: '2-digit'}),
-                    duration,
-                    earnings.toFixed(2)
-                ]);
+    document.getElementById('export-all').addEventListener('click', () => {
+        const data = [];
+        Object.keys(workRecords).sort().forEach(date => {
+            workRecords[date].forEach(r => {
+                const m = calcMins(r.start, r.end);
+                data.push({
+                    "日期": date,
+                    "上班时间": r.start,
+                    "下班时间": r.end,
+                    "时长(分钟)": m,
+                    "收益(元)": (m / 60 * hourlyWage).toFixed(2)
+                });
             });
         });
+        if(data.length === 0) return alert("没有记录可以导出");
+        downloadExcel(data, `全部打工记录`);
+    });
 
-        if (rows.length === 1) {
-            return null; // 没有可导出的完成记录
-        }
-
-        rows.push([]);
-        rows.push(['合计', '', '', totalMinutes, totalEarnings.toFixed(2)]);
-        return rows;
+    function downloadExcel(data, name) {
+        const ws = XLSX.utils.json_to_sheet(data);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "记录");
+        XLSX.writeFile(wb, `${name}.xlsx`);
     }
 
-    function exportSelectedMonthToExcel() {
-        if (typeof XLSX === 'undefined') {
-            alert('Excel 导出库加载失败，请检查网络。');
-            return;
-        }
-
-        const monthKey = exportMonthSelect ? exportMonthSelect.value : getMonthKey();
-        const rows = buildMonthDetailRows(mont
+    // 注册 Service Worker
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('service-worker.js');
+    }
+</script>
+</body>
+</html>
