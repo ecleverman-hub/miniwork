@@ -1,9 +1,9 @@
 {
   "name": "零工打卡薪资计算器",
-  "short_name": "打工打卡",
-  "start_url": "./",
+  "short_name": "打工记账",
+  "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#ffffff",
+  "background_color": "#f2f2f7",
   "theme_color": "#2563eb",
   "icons": [
     {
