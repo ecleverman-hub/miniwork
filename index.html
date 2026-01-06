@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>零工打卡薪资计算器</title>
 
     <!-- PWA 相关 -->
@@ -25,9 +25,7 @@
             line-height: 1.6;
             padding: 12px;
             font-size: 20px; /* 整体字体偏大 */
-    -webkit-text-size-adjust: 100%;
-    padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
-}
+        }
 
         .container {
             max-width: 560px;
@@ -312,7 +310,24 @@
 
         .export-wrap {
             margin-top: 12px;
-            text-align: right;
+        }
+
+        /* 新增：导出区布局 */
+        .export-controls {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            justify-content: flex-end;
+            flex-wrap: wrap;
+        }
+
+        .export-controls select {
+            padding: 10px 12px;
+            border-radius: 999px;
+            border: 1px solid #d1d5db;
+            background: #ffffff;
+            font-size: 18px;
+            min-width: 140px;
         }
 
         .export-btn {
@@ -321,9 +336,14 @@
             border: none;
             background-color: #10b981;
             color: #ffffff;
-            font-size: 20px;
+            font-size: 18px;
             cursor: pointer;
             font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .export-btn.secondary {
+            background-color: #0ea5e9;
         }
 
         .export-btn:active {
@@ -346,25 +366,17 @@
             .month-summary {
                 grid-template-columns: 1fr;
             }
+
+            .export-controls {
+                justify-content: stretch;
+            }
+
+            .export-controls select,
+            .export-controls button {
+                width: 100%;
+            }
         }
-
-/* iPhone 13 窄屏适配补丁 */
-@media (max-width: 420px) {
-    body { font-size: 18px; }
-    h1 { font-size: 26px; letter-spacing: 1px; }
-    .wage-input label { font-size: 20px; }
-    .wage-input input { width: 120px; font-size: 20px; }
-    .manual-input-title { font-size: 22px; }
-}
-
-/* 允许标题/记录行换行，避免内容被挤出屏幕 */
-.section-title { flex-wrap: wrap; gap: 6px; }
-.section-title span:last-child { white-space: normal; text-align: right; }
-
-.record-item { flex-wrap: wrap; }
-.record-duration { white-space: normal; }
-
-</style>
+    </style>
 </head>
 <body>
 <div class="container">
@@ -438,18 +450,32 @@
             </div>
         </div>
 
+        <!-- 新增：按月导出/导出全部 -->
         <div class="export-wrap">
-            <button class="export-btn" id="export-month-btn">导出本月记录为 Excel</button>
+            <div class="export-controls">
+                <select id="export-month-select" title="选择要导出的月份"></select>
+                <button class="export-btn" id="export-selected-btn">导出所选月份 Excel</button>
+                <button class="export-btn secondary" id="export-all-btn">导出全部月份 Excel</button>
+            </div>
         </div>
     </div>
 
-    <!-- 新增：本月打卡记录列表 -->
+    <!-- 本月打卡记录 -->
     <div class="month-records">
         <div class="section-title">
             <span>本月打卡记录</span>
             <span>按日期从早到晚排列</span>
         </div>
         <div class="record-list" id="month-records-list"></div>
+    </div>
+
+    <!-- 新增：历史每月收益 -->
+    <div class="month-records">
+        <div class="section-title">
+            <span>历史每月收益</span>
+            <span>按月份从新到旧</span>
+        </div>
+        <div class="record-list" id="all-months-list"></div>
     </div>
 </div>
 
@@ -473,7 +499,11 @@
     const monthEarningsEl = document.getElementById('month-earnings');
     const monthRecordsListEl = document.getElementById('month-records-list');
 
-    const exportMonthBtn = document.getElementById('export-month-btn');
+    const allMonthsListEl = document.getElementById('all-months-list');
+
+    const exportMonthSelect = document.getElementById('export-month-select');
+    const exportSelectedBtn = document.getElementById('export-selected-btn');
+    const exportAllBtn = document.getElementById('export-all-btn');
 
     const manualStartInput = document.getElementById('manual-start');
     const manualEndInput = document.getElementById('manual-end');
@@ -771,21 +801,118 @@
         }
     }
 
-    function updateDisplay() {
-        updateSummaryView();
-        updateRecordList();
-        updateMonthStats();
-        updateMonthRecordList();
+    // ====== 新增：按月汇总计算 & 渲染 ======
+    // 计算所有月份汇总：{ "YYYY-MM": {minutes, earnings, days} }
+    function calcAllMonthsStats() {
+        const map = {}; // monthKey -> { minutes, daysSet(Set) }
+
+        Object.keys(workRecords).forEach(dateKey => {
+            const monthKey = dateKey.slice(0, 7); // "YYYY-MM"
+            const dayRecords = workRecords[dateKey] || [];
+
+            let dayMinutes = 0;
+            dayRecords.forEach(r => {
+                if (r.end) dayMinutes += Math.round((r.end - r.start) / (1000 * 60));
+            });
+
+            if (!map[monthKey]) {
+                map[monthKey] = { minutes: 0, daysSet: new Set() };
+            }
+            if (dayMinutes > 0) map[monthKey].daysSet.add(dateKey);
+
+            map[monthKey].minutes += dayMinutes;
+        });
+
+        const result = {};
+        Object.keys(map).forEach(mk => {
+            const minutes = map[mk].minutes;
+            result[mk] = {
+                minutes,
+                days: map[mk].daysSet.size,
+                earnings: (minutes / 60) * hourlyWage
+            };
+        });
+
+        return result;
     }
 
-    // 导出 Excel
-    function exportMonthToExcel() {
-        if (typeof XLSX === 'undefined') {
-            alert('Excel 导出库加载失败，请检查网络。');
+    function updateAllMonthsEarningsList() {
+        if (!allMonthsListEl) return;
+
+        allMonthsListEl.innerHTML = '';
+
+        function showEmpty(msg) {
+            const emptyDiv = document.createElement('div');
+            emptyDiv.className = 'record-empty';
+            emptyDiv.textContent = msg;
+            allMonthsListEl.appendChild(emptyDiv);
+        }
+
+        const stats = calcAllMonthsStats();
+        const months = Object.keys(stats).sort().reverse(); // 新到旧
+
+        if (months.length === 0) {
+            showEmpty('暂无历史记录');
             return;
         }
 
-        const monthKey = getMonthKey();
+        months.forEach(monthKey => {
+            const s = stats[monthKey];
+
+            const header = document.createElement('div');
+            header.className = 'record-date-header';
+            header.textContent = `🗓️ ${monthKey}`;
+            allMonthsListEl.appendChild(header);
+
+            const item = document.createElement('div');
+            item.className = 'record-item';
+
+            const minutes = s.minutes;
+            const earnings = s.earnings.toFixed(2);
+
+            item.innerHTML = `
+                <div class="record-time">工作天数：${s.days} 天</div>
+                <div class="record-duration">${minutes} 分钟（约 ${earnings} 元）</div>
+            `;
+
+            allMonthsListEl.appendChild(item);
+        });
+    }
+
+    // ====== 新增：月份下拉框 ======
+    function getAllMonthKeys() {
+        const set = new Set();
+        Object.keys(workRecords).forEach(dateKey => {
+            if (typeof dateKey === 'string' && dateKey.length >= 7) {
+                set.add(dateKey.slice(0, 7));
+            }
+        });
+        // 保证当前月也在下拉框里（即使没记录也能选）
+        set.add(getMonthKey());
+        return Array.from(set).sort().reverse();
+    }
+
+    function updateMonthSelectOptions() {
+        if (!exportMonthSelect) return;
+
+        const current = exportMonthSelect.value || getMonthKey();
+        const months = getAllMonthKeys();
+
+        exportMonthSelect.innerHTML = '';
+        months.forEach(mk => {
+            const opt = document.createElement('option');
+            opt.value = mk;
+            opt.textContent = mk;
+            exportMonthSelect.appendChild(opt);
+        });
+
+        // 尽量保留原选择
+        const keep = months.includes(current) ? current : getMonthKey();
+        exportMonthSelect.value = keep;
+    }
+
+    // ====== 导出 Excel（按月选择 / 全部月份） ======
+    function buildMonthDetailRows(monthKey) {
         const rows = [['日期', '上班时间', '下班时间', '时长(分钟)', '收入(元)']];
 
         let totalMinutes = 0;
@@ -795,7 +922,7 @@
 
         allKeys.forEach(dateKey => {
             if (!dateKey.startsWith(monthKey)) return;
-            const records = workRecords[dateKey];
+            const records = workRecords[dateKey] || [];
 
             records.forEach(record => {
                 if (!record.end) return;
@@ -803,7 +930,7 @@
                 const start = new Date(record.start);
                 const end = new Date(record.end);
                 const duration = Math.round((record.end - record.start) / (1000 * 60));
-                const earnings = (duration / 60 * hourlyWage);
+                const earnings = (duration / 60) * hourlyWage;
 
                 totalMinutes += duration;
                 totalEarnings += earnings;
@@ -819,32 +946,19 @@
         });
 
         if (rows.length === 1) {
-            alert('本月暂无完成的打卡记录可导出。');
-            return;
+            return null; // 没有可导出的完成记录
         }
 
         rows.push([]);
         rows.push(['合计', '', '', totalMinutes, totalEarnings.toFixed(2)]);
-
-        const ws = XLSX.utils.aoa_to_sheet(rows);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, '本月记录');
-        XLSX.writeFile(wb, `${monthKey}-打工记录.xlsx`);
+        return rows;
     }
 
-    exportMonthBtn.addEventListener('click', exportMonthToExcel);
+    function exportSelectedMonthToExcel() {
+        if (typeof XLSX === 'undefined') {
+            alert('Excel 导出库加载失败，请检查网络。');
+            return;
+        }
 
-    // 初次渲染
-    updateDisplay();
-
-    // PWA Service Worker
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-            navigator.serviceWorker.register('service-worker.js').catch(err => {
-                console.log('ServiceWorker 注册失败：', err);
-            });
-        });
-    }
-</script>
-</body>
-</html>
+        const monthKey = exportMonthSelect ? exportMonthSelect.value : getMonthKey();
+        const rows = buildMonthDetailRows(mont
