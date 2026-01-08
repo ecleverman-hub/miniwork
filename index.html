@@ -1,170 +1,356 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <!-- ✅ 修复：用本地日期 + iPhone 安全区更稳（可选） -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>打工记账本 - 增强版</title>
+  <meta charset="UTF-8">
+  <!-- ✅ 修复：本地日期更稳 + iPhone 安全区更稳 -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>打工记账本 - 增强版</title>
 
-    <style>
-        :root {
-            --primary-color: #007aff;
-            --success-color: #34c759;
-            --warning-color: #ff9500;
-            --danger-color: #ff3b30;
-            --bg-color: #f2f2f7;
-        }
+  <style>
+    :root {
+      --primary-color: #007aff;
+      --success-color: #34c759;
+      --warning-color: #ff9500;
+      --danger-color: #ff3b30;
+      --bg-color: #f2f2f7;
+    }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
-        body {
-            background-color: var(--bg-color);
-            color: #000;
-            font-family: -apple-system, sans-serif;
+    body {
+      background-color: var(--bg-color);
+      color: #000;
+      font-family: -apple-system, sans-serif;
 
-            /* ✅ iPhone 刘海/底部手势条安全区（不影响安卓） */
-            padding: max(16px, env(safe-area-inset-top))
-                     max(16px, env(safe-area-inset-right))
-                     max(16px, env(safe-area-inset-bottom))
-                     max(16px, env(safe-area-inset-left));
+      /* ✅ iPhone 刘海/底部手势条安全区（不影响安卓） */
+      padding: max(16px, env(safe-area-inset-top))
+               max(16px, env(safe-area-inset-right))
+               max(16px, env(safe-area-inset-bottom))
+               max(16px, env(safe-area-inset-left));
 
-            font-size: 18px;
-            -webkit-text-size-adjust: 100%;
-        }
+      font-size: 18px;
+      -webkit-text-size-adjust: 100%;
+    }
 
-        .container { max-width: 500px; margin: 0 auto; }
+    .container { max-width: 500px; margin: 0 auto; }
 
-        .card {
-            background: #ffffff;
-            border-radius: 16px;
-            padding: 18px;
-            margin-bottom: 15px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-        }
+    .card {
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 18px;
+      margin-bottom: 15px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
 
-        /* 顶部样式 */
-        h1 { font-size: 26px; margin-bottom: 15px; }
-        .wage-box { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+    h1 { font-size: 26px; margin-bottom: 15px; }
 
-        input[type="number"], input[type="time"] {
-            font-size: 20px; padding: 10px; border: 1px solid #d1d1d6; border-radius: 10px;
-        }
-        input[type="time"] { width: 100%; margin-top: 5px; margin-bottom: 12px; }
+    .wage-box {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
 
-        .btn {
-            display: block; width: 100%; padding: 15px; border: none; border-radius: 12px;
-            font-size: 18px; font-weight: 700; cursor: pointer; text-align: center;
-        }
-        .btn-primary { background: var(--primary-color); color: white; }
-        .btn-success { background: var(--success-color); color: white; margin-bottom: 20px; }
+    input[type="number"], input[type="time"] {
+      font-size: 20px;
+      padding: 10px;
+      border: 1px solid #d1d1d6;
+      border-radius: 10px;
+    }
+    input[type="time"] { width: 100%; margin-top: 5px; margin-bottom: 12px; }
 
-        /* 月份分组样式 */
-        .month-section { margin-bottom: 15px; }
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 15px;
+      border: none;
+      border-radius: 12px;
+      font-size: 18px;
+      font-weight: 700;
+      cursor: pointer;
+      text-align: center;
+    }
+    .btn-primary { background: var(--primary-color); color: white; }
+    .btn-success { background: var(--success-color); color: white; margin-bottom: 20px; }
 
-        .month-header {
-            background: #ffffff;
-            border-radius: 12px;
-            padding: 15px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-left: 5px solid var(--primary-color);
-            cursor: pointer;
-            margin-bottom: 5px;
-            gap: 10px;
-        }
+    .month-section { margin-bottom: 15px; }
 
-        .month-info h3 { font-size: 20px; color: #1c1c1e; }
-        .month-summary { font-size: 14px; color: #8e8e93; margin-top: 4px; }
-        .month-summary b { color: var(--warning-color); font-size: 16px; }
+    .month-header {
+      background: #ffffff;
+      border-radius: 12px;
+      padding: 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-left: 5px solid var(--primary-color);
+      cursor: pointer;
+      margin-bottom: 5px;
+      gap: 10px;
+    }
 
-        .month-content { display: none; padding: 5px; }
-        .month-content.active { display: block; }
+    .month-info { min-width: 0; }
+    .month-info h3 { font-size: 20px; color: #1c1c1e; }
+    .month-summary { font-size: 14px; color: #8e8e93; margin-top: 4px; }
+    .month-summary b { color: var(--warning-color); font-size: 16px; }
 
-        .record-card {
-            background: #fff;
-            margin-bottom: 8px;
-            padding: 12px;
-            border-radius: 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 16px;
-            gap: 10px;
-        }
+    .month-content { display: none; padding: 5px; }
+    .month-content.active { display: block; }
 
-        .record-date { color: #8e8e93; font-size: 13px; }
-        .record-money { color: var(--warning-color); font-weight: bold; }
+    .record-card {
+      background: #fff;
+      margin-bottom: 8px;
+      padding: 12px;
+      border-radius: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 16px;
+      gap: 10px;
+    }
 
-        .del-btn {
-            color: var(--danger-color); background: #fff1f0; border: none;
-            padding: 5px 10px; border-radius: 6px; font-size: 14px;
-        }
+    .record-date { color: #8e8e93; font-size: 13px; }
+    .record-money { color: var(--warning-color); font-weight: bold; }
 
-        .export-month-btn {
-            font-size: 13px; color: var(--primary-color); border: 1px solid var(--primary-color);
-            background: none; padding: 6px 10px; border-radius: 8px;
-            white-space: nowrap;
-        }
+    .del-btn {
+      color: var(--danger-color);
+      background: #fff1f0;
+      border: none;
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-size: 14px;
+      white-space: nowrap;
+    }
 
-        @media (max-width: 420px) {
-            body { font-size: 17px; }
-            h1 { font-size: 24px; }
-            input[type="number"], input[type="time"] { font-size: 18px; }
-        }
-    </style>
+    .export-month-btn {
+      font-size: 13px;
+      color: var(--primary-color);
+      border: 1px solid var(--primary-color);
+      background: none;
+      padding: 6px 10px;
+      border-radius: 8px;
+      white-space: nowrap;
+    }
+
+    @media (max-width: 420px) {
+      body { font-size: 17px; }
+      h1 { font-size: 24px; }
+      input[type="number"], input[type="time"] { font-size: 18px; }
+    }
+  </style>
 </head>
+
 <body>
-
 <div class="container">
-    <h1>打工记账本 💰</h1>
+  <h1>打工记账本 💰</h1>
 
-    <div class="card">
-        <div class="wage-box">
-            <span>我的时薪 (元/小时)</span>
-            <input type="number" id="hourly-wage" style="width: 90px;">
-        </div>
+  <div class="card">
+    <div class="wage-box">
+      <span>我的时薪 (元/小时)</span>
+      <input type="number" id="hourly-wage" style="width: 90px;">
     </div>
+  </div>
 
-    <div class="card">
-        <h2 style="font-size: 18px; margin-bottom: 10px;">➕ 记一笔今天的工作</h2>
-        <label>开始时间</label>
-        <input type="time" id="manual-start">
-        <label>结束时间</label>
-        <input type="time" id="manual-end">
-        <button class="btn btn-primary" id="save-btn">保存记录</button>
+  <div class="card">
+    <h2 style="font-size: 18px; margin-bottom: 10px;">➕ 记一笔今天的工作</h2>
+    <label>开始时间</label>
+    <input type="time" id="manual-start">
+    <label>结束时间</label>
+    <input type="time" id="manual-end">
+    <button class="btn btn-primary" id="save-btn">保存记录</button>
+    <div style="color:#8e8e93; font-size:12px; margin-top:8px;">
+      支持跨天：例如 23:30 - 01:00
     </div>
+  </div>
 
-    <button class="btn btn-success" id="export-all">导出全部历史记录 (Excel)</button>
+  <button class="btn btn-success" id="export-all">导出全部历史记录 (Excel)</button>
 
-    <h2 style="margin-bottom: 10px; font-size: 20px;">历史清单</h2>
-    <div id="history-list"></div>
+  <h2 style="margin-bottom: 10px; font-size: 20px;">历史清单</h2>
+  <div id="history-list"></div>
 
-    <div style="height: 50px;"></div>
+  <div style="height: 50px;"></div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
 <script>
-    // ✅ 兼容旧数据：workRecords 可能是 {date: [{start: timestamp, end: timestamp}]} 或 {date: [{start:"HH:mm", end:"HH:mm"}]}
-    let workRecords = JSON.parse(localStorage.getItem('workRecords')) || {};
-    let hourlyWage = parseFloat(localStorage.getItem('hourlyWage')) || 14;
+  let workRecords = JSON.parse(localStorage.getItem('workRecords')) || {};
+  let hourlyWage = parseFloat(localStorage.getItem('hourlyWage')) || 14;
 
-    const historyList = document.getElementById('history-list');
-    const wageInput = document.getElementById('hourly-wage');
+  const historyList = document.getElementById('history-list');
+  const wageInput = document.getElementById('hourly-wage');
 
-    wageInput.value = hourlyWage;
-    render();
+  wageInput.value = hourlyWage;
+  render();
 
-    // ✅ 本地日期 key（修复 toISOString 跨时区问题）
-    function getLocalDateKey(d = new Date()) {
-        const y = d.getFullYear();
-        const m = String(d.getMonth() + 1).padStart(2, '0');
-        const day = String(d.getDate()).padStart(2, '0');
-        return `${y}-${m}-${day}`;
+  // ✅ 本地日期 key（修复 toISOString 跨时区导致“记到前/后一天”）
+  function getLocalDateKey(d = new Date()) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }
+
+  // ✅ 显示用：把时间戳 / 字符串时间戳 / HH:mm 都格式化成 HH:mm
+  function fmtTime(v) {
+    if (typeof v === 'number') {
+      const d = new Date(v);
+      return d.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+    }
+    const n = Number(v);
+    if (!Number.isNaN(n) && n > 1e11) {
+      const d = new Date(n);
+      return d.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+    }
+    return String(v || '');
+  }
+
+  // ✅ 计算分钟：兼容旧时间戳 + 新 HH:mm，并支持跨天
+  function calcMins(s, e) {
+    // 旧：number timestamp
+    if (typeof s === 'number' && typeof e === 'number') {
+      return Math.max(0, Math.round((e - s) / 60000));
     }
 
-    // ✅ 显示用：把时间戳 / 字符串时间戳 / HH:mm 都格式化成 HH:mm
-    function fmtTime(v) {
-        if (typeof v === 'number') {
-            const d = new Date(v);
+    // 旧：string number timestamp
+    const sn = Number(s), en = Number(e);
+    if (!Number.isNaN(sn) && !Number.isNaN(en) && sn > 1e11 && en > 1e11) {
+      return Math.max(0, Math.round((en - sn) / 60000));
+    }
+
+    // 新：HH:mm
+    const [sh, sm] = String(s).split(':').map(Number);
+    const [eh, em] = String(e).split(':').map(Number);
+    if ([sh, sm, eh, em].some(n => Number.isNaN(n))) return 0;
+
+    let start = sh * 60 + sm;
+    let end = eh * 60 + em;
+
+    // 跨天：23:30 - 01:00
+    if (end < start) end += 24 * 60;
+
+    return Math.max(0, end - start);
+  }
+
+  // 保存逻辑（新记录仍保存 HH:mm，不破坏旧数据）
+  document.getElementById('save-btn').onclick = () => {
+    const s = document.getElementById('manual-start').value;
+    const e = document.getElementById('manual-end').value;
+    if (!s || !e) return alert("请选好时间");
+
+    const mins = calcMins(s, e);
+    if (mins <= 0) return alert("结束时间必须晚于开始时间（跨天也可以）");
+
+    const today = getLocalDateKey();
+    if (!workRecords[today]) workRecords[today] = [];
+    workRecords[today].push({ start: s, end: e });
+
+    localStorage.setItem('workRecords', JSON.stringify(workRecords));
+    render();
+    alert("已记入今天！");
+  };
+
+  // 时薪变动
+  wageInput.oninput = () => {
+    hourlyWage = parseFloat(wageInput.value) || 0;
+    localStorage.setItem('hourlyWage', hourlyWage);
+    render();
+  };
+
+  function render() {
+    historyList.innerHTML = '';
+
+    const dates = Object.keys(workRecords).sort().reverse();
+    if (dates.length === 0) {
+      historyList.innerHTML = '<div style="text-align:center; color:#999; margin-top:20px;">暂无记录</div>';
+      return;
+    }
+
+    // ✅ 按月份归类
+    const months = {};
+    dates.forEach(date => {
+      const mKey = date.substring(0, 7); // YYYY-MM
+      if (!months[mKey]) months[mKey] = [];
+      months[mKey].push(date);
+    });
+
+    // ✅ 月份倒序稳定显示
+    const monthKeys = Object.keys(months).sort().reverse();
+
+    monthKeys.forEach(mKey => {
+      let mTotalMins = 0;
+      let mContentHtml = '';
+
+      months[mKey].forEach(date => {
+        const dayList = workRecords[date] || [];
+        dayList.forEach((r, idx) => {
+          const mins = calcMins(r.start, r.end);
+          mTotalMins += mins;
+          const money = (mins / 60 * hourlyWage).toFixed(2);
+
+          mContentHtml += `
+            <div class="record-card">
+              <div style="min-width:0;">
+                <div class="record-date">${date}</div>
+                <div><b>${fmtTime(r.start)} - ${fmtTime(r.end)}</b></div>
+              </div>
+              <div style="text-align:right;">
+                <div class="record-money">￥${money}</div>
+                <button class="del-btn" onclick="delRecord('${date}', ${idx})">删除</button>
+              </div>
+            </div>`;
+        });
+      });
+
+      const mMoney = (mTotalMins / 60 * hourlyWage).toFixed(2);
+
+      const section = document.createElement('div');
+      section.className = 'month-section';
+      section.innerHTML = `
+        <div class="month-header" onclick="this.nextElementSibling.classList.toggle('active')">
+          <div class="month-info">
+            <h3>${mKey.replace('-','年')}月</h3>
+            <div class="month-summary">共计: ${mTotalMins}分钟 | 预计收益: <b>￥${mMoney}</b></div>
+          </div>
+          <button class="export-month-btn" onclick="event.stopPropagation(); exportData('${mKey}')">导出此月</button>
+        </div>
+        <div class="month-content">
+          ${mContentHtml || '<div style="color:#999; text-align:center; padding:12px;">本月暂无记录</div>'}
+        </div>
+      `;
+      historyList.appendChild(section);
+    });
+  }
+
+  // 删除一条
+  window.delRecord = (date, idx) => {
+    if (confirm("确定删除吗？")) {
+      workRecords[date].splice(idx, 1);
+      if (workRecords[date].length === 0) delete workRecords[date];
+      localStorage.setItem('workRecords', JSON.stringify(workRecords));
+      render();
+    }
+  };
+
+  // 导出 Excel（兼容旧时间戳/新HH:mm）
+  window.exportData = (filter) => {
+    const rows = [["日期", "上班时间", "下班时间", "时长(分)", "金额(元)"]];
+
+    Object.keys(workRecords).sort().forEach(date => {
+      if (!filter || date.startsWith(filter)) {
+        (workRecords[date] || []).forEach(r => {
+          const m = calcMins(r.start, r.end);
+          rows.push([date, fmtTime(r.start), fmtTime(r.end), m, (m/60*hourlyWage).toFixed(2)]);
+        });
+      }
+    });
+
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "打工记录");
+    XLSX.writeFile(wb, `${filter || '全部'}打工清单.xlsx`);
+  };
+
+  document.getElementById('export-all').onclick = () => exportData();
+</script>
+</body>
+</html>
