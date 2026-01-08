@@ -2,12 +2,13 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- ✅ 修复：用本地日期 + iPhone 安全区更稳（可选） -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>打工记账本 - 增强版</title>
 
     <style>
         :root {
-            --primary-color: #007aff; 
+            --primary-color: #007aff;
             --success-color: #34c759;
             --warning-color: #ff9500;
             --danger-color: #ff3b30;
@@ -20,8 +21,15 @@
             background-color: var(--bg-color);
             color: #000;
             font-family: -apple-system, sans-serif;
-            padding: 16px;
+
+            /* ✅ iPhone 刘海/底部手势条安全区（不影响安卓） */
+            padding: max(16px, env(safe-area-inset-top))
+                     max(16px, env(safe-area-inset-right))
+                     max(16px, env(safe-area-inset-bottom))
+                     max(16px, env(safe-area-inset-left));
+
             font-size: 18px;
+            -webkit-text-size-adjust: 100%;
         }
 
         .container { max-width: 500px; margin: 0 auto; }
@@ -36,7 +44,8 @@
 
         /* 顶部样式 */
         h1 { font-size: 26px; margin-bottom: 15px; }
-        .wage-box { display: flex; justify-content: space-between; align-items: center; }
+        .wage-box { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+
         input[type="number"], input[type="time"] {
             font-size: 20px; padding: 10px; border: 1px solid #d1d1d6; border-radius: 10px;
         }
@@ -51,7 +60,7 @@
 
         /* 月份分组样式 */
         .month-section { margin-bottom: 15px; }
-        
+
         .month-header {
             background: #ffffff;
             border-radius: 12px;
@@ -62,6 +71,7 @@
             border-left: 5px solid var(--primary-color);
             cursor: pointer;
             margin-bottom: 5px;
+            gap: 10px;
         }
 
         .month-info h3 { font-size: 20px; color: #1c1c1e; }
@@ -80,6 +90,7 @@
             justify-content: space-between;
             align-items: center;
             font-size: 16px;
+            gap: 10px;
         }
 
         .record-date { color: #8e8e93; font-size: 13px; }
@@ -92,7 +103,14 @@
 
         .export-month-btn {
             font-size: 13px; color: var(--primary-color); border: 1px solid var(--primary-color);
-            background: none; padding: 4px 8px; border-radius: 6px;
+            background: none; padding: 6px 10px; border-radius: 8px;
+            white-space: nowrap;
+        }
+
+        @media (max-width: 420px) {
+            body { font-size: 17px; }
+            h1 { font-size: 24px; }
+            input[type="number"], input[type="time"] { font-size: 18px; }
         }
     </style>
 </head>
@@ -104,7 +122,7 @@
     <div class="card">
         <div class="wage-box">
             <span>我的时薪 (元/小时)</span>
-            <input type="number" id="hourly-wage" style="width: 80px;">
+            <input type="number" id="hourly-wage" style="width: 90px;">
         </div>
     </div>
 
@@ -121,13 +139,14 @@
 
     <h2 style="margin-bottom: 10px; font-size: 20px;">历史清单</h2>
     <div id="history-list"></div>
-    
+
     <div style="height: 50px;"></div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
 <script>
+    // ✅ 兼容旧数据：workRecords 可能是 {date: [{start: timestamp, end: timestamp}]} 或 {date: [{start:"HH:mm", end:"HH:mm"}]}
     let workRecords = JSON.parse(localStorage.getItem('workRecords')) || {};
     let hourlyWage = parseFloat(localStorage.getItem('hourlyWage')) || 14;
 
@@ -137,122 +156,15 @@
     wageInput.value = hourlyWage;
     render();
 
-    // 保存逻辑
-    document.getElementById('save-btn').onclick = () => {
-        const s = document.getElementById('manual-start').value;
-        const e = document.getElementById('manual-end').value;
-        if(!s || !e) return alert("请选好时间");
-        
-        const today = new Date().toISOString().split('T')[0];
-        if(!workRecords[today]) workRecords[today] = [];
-        workRecords[today].push({ start: s, end: e });
-        
-        localStorage.setItem('workRecords', JSON.stringify(workRecords));
-        render();
-        alert("已记入今天！");
-    };
-
-    // 时薪变动
-    wageInput.oninput = () => {
-        hourlyWage = parseFloat(wageInput.value) || 0;
-        localStorage.setItem('hourlyWage', hourlyWage);
-        render();
-    };
-
-    function calcMins(s, e) {
-        const start = new Date(`2000-01-01 ${s}`).getTime();
-        const end = new Date(`2000-01-01 ${e}`).getTime();
-        return Math.round((end - start) / 60000);
+    // ✅ 本地日期 key（修复 toISOString 跨时区问题）
+    function getLocalDateKey(d = new Date()) {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
     }
 
-    function render() {
-        historyList.innerHTML = '';
-        
-        // 按月份对日期进行归类
-        const months = {};
-        const dates = Object.keys(workRecords).sort().reverse();
-        
-        dates.forEach(date => {
-            const mKey = date.substring(0, 7); // 提取 YYYY-MM
-            if(!months[mKey]) months[mKey] = [];
-            months[mKey].push(date);
-        });
-
-        if(dates.length === 0) {
-            historyList.innerHTML = '<div style="text-align:center; color:#999; margin-top:20px;">暂无记录</div>';
-            return;
-        }
-
-        // 循环显示每个月
-        for(const mKey in months) {
-            let mTotalMins = 0;
-            let mContentHtml = '';
-
-            months[mKey].forEach(date => {
-                workRecords[date].forEach((r, idx) => {
-                    const mins = calcMins(r.start, r.end);
-                    mTotalMins += mins;
-                    const money = (mins / 60 * hourlyWage).toFixed(2);
-                    mContentHtml += `
-                        <div class="record-card">
-                            <div>
-                                <div class="record-date">${date}</div>
-                                <div><b>${r.start} - ${r.end}</b></div>
-                            </div>
-                            <div style="text-align:right">
-                                <div class="record-money">￥${money}</div>
-                                <button class="del-btn" onclick="del('${date}', ${idx})">删除</button>
-                            </div>
-                        </div>`;
-                });
-            });
-
-            const mMoney = (mTotalMins / 60 * hourlyWage).toFixed(2);
-            
-            const section = document.createElement('div');
-            section.className = 'month-section';
-            section.innerHTML = `
-                <div class="month-header" onclick="this.nextElementSibling.classList.toggle('active')">
-                    <div class="month-info">
-                        <h3>${mKey.replace('-','年')}月</h3>
-                        <div class="month-summary">共计: ${mTotalMins}分钟 | 预计收益: <b>￥${mMoney}</b></div>
-                    </div>
-                    <button class="export-month-btn" onclick="event.stopPropagation(); exportData('${mKey}')">导出此月</button>
-                </div>
-                <div class="month-content">
-                    ${mContentHtml}
-                </div>
-            `;
-            historyList.appendChild(section);
-        }
-    }
-
-    window.del = (date, idx) => {
-        if(confirm("确定删除吗？")) {
-            workRecords[date].splice(idx, 1);
-            if(workRecords[date].length === 0) delete workRecords[date];
-            localStorage.setItem('workRecords', JSON.stringify(workRecords));
-            render();
-        }
-    };
-
-    window.exportData = (filter) => {
-        const rows = [["日期", "上班时间", "下班时间", "时长(分)", "金额(元)"]];
-        Object.keys(workRecords).sort().forEach(date => {
-            if(!filter || date.startsWith(filter)) {
-                workRecords[date].forEach(r => {
-                    const m = calcMins(r.start, r.end);
-                    rows.push([date, r.start, r.end, m, (m/60*hourlyWage).toFixed(2)]);
-                });
-            }
-        });
-        const ws = XLSX.utils.aoa_to_sheet(rows);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "打工记录");
-        XLSX.writeFile(wb, `${filter || '全部'}打工清单.xlsx`);
-    };
-
-    document.getElementById('export-all').onclick = () => exportData();
-</script>
-</body>
-</html>
+    // ✅ 显示用：把时间戳 / 字符串时间戳 / HH:mm 都格式化成 HH:mm
+    function fmtTime(v) {
+        if (typeof v === 'number') {
+            const d = new Date(v);
